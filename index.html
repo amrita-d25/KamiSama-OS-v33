@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KamiSama OS // Level 33</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <section id="startScreen" class="screen active">
+      <div class="glow-card center">
+        <p class="eyebrow">LITTLE GUY RECORDS™ PRESENTS</p>
+        <h1>KAMISAMA OS</h1>
+        <p class="subtitle">LEVEL 33 SIDE QUEST SYSTEM</p>
+        <div class="scanline"></div>
+        <button id="beginBtn">BEGIN ADVENTURE</button>
+      </div>
+    </section>
+
+    <section id="questScreen" class="screen">
+      <header class="hud">
+        <div>
+          <p class="eyebrow">PLAYER</p>
+          <h2>KamiSama</h2>
+        </div>
+        <div class="level">LVL 33</div>
+      </header>
+
+      <div class="status-card">
+        <div class="stat-row"><span>HP</span><div class="bar"><span id="hpBar"></span></div><span id="hpText">68/99</span></div>
+        <div class="stat-row"><span>QUEST</span><div class="bar"><span id="questBar"></span></div><span id="progressText">0/6</span></div>
+      </div>
+
+      <section class="panel">
+        <p class="eyebrow">ADVENTURE LOG</p>
+        <h1 id="questTitle">Side Quest Locked</h1>
+        <p id="questMessage" class="message"></p>
+
+        <div id="rewardBox" class="reward hidden">
+          <p class="eyebrow">ITEM ACQUIRED</p>
+          <h3 id="rewardName"></h3>
+          <p id="rewardDesc"></p>
+        </div>
+
+        <div class="code-box">
+          <label for="codeInput">ENTER ACCESS CODE</label>
+          <input id="codeInput" autocomplete="off" placeholder="ACCESS CODE" />
+          <button id="unlockBtn">UNLOCK</button>
+          <p id="errorText" class="error"></p>
+        </div>
+
+        <div id="nextClueBox" class="next-clue hidden">
+          <p class="eyebrow">NEXT OBJECTIVE</p>
+          <p id="nextClue"></p>
+        </div>
+      </section>
+
+      <section class="inventory">
+        <p class="eyebrow">INVENTORY</p>
+        <ul id="inventoryList"></ul>
+      </section>
+
+      <button id="resetBtn" class="ghost">RESET SAVE FILE</button>
+    </section>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>

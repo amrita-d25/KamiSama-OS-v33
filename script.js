@@ -1,91 +1,238 @@
-const quests = [
-  { code: "CREATOR", title: "The Creator", message: "Some people play music. You build worlds. KamiSama is not just a name — it is something you created, and I am proud of you for that.", reward: "KamiSama Patch", desc: "Official Wolf God crest added to inventory.", clue: "Next objective: seek the place where the day’s armor waits." },
-  { code: "COLLECTOR", title: "The Collector", message: "You always notice the tiny things: tiny jars, tiny books, tiny bags, tiny treasures. I love that you still find wonder in small things.", reward: "Mystery Berry Jar", desc: "A tiny jar filled with sweet loot.", clue: "Next objective: where lost tools would return to the maker." },
-  { code: "MAKER", title: "The Maker", message: "This year we became beginners together. You made beanies and a snood. I made bikini tops and chaos. Different vibes, same adventure.", reward: "Crochet Recovery Kit", desc: "Crafting inventory restored.", clue: "Next objective: find the shadow waiting for its new tiny bag adventure." },
-  { code: "ADVENTURER", title: "The Adventurer", message: "Errands become side quests with you. Ordinary days become stories. Thank you for making life feel like there is always something to discover.", reward: "Gengar Fanny Pack", desc: "Tiny bag energy upgraded.", clue: "Next objective: where the Wolf God’s mark waits to be worn." },
-  { code: "WOLFGOD", title: "The Wolf God", message: "Strong. Focused. Curious. Weird in the best way. Always working, always growing, always doing your lil guy best.", reward: "KamiSama Shirt", desc: "Level 33 streetwear unlocked.", clue: "Final objective: recovery protocol is ready." },
-  { code: "FULLRESTORE", title: "HP Restore", message: "You spend so much time taking care of everyone and becoming better. Today, you do not need to earn rest. You already deserve it.", reward: "Full Restore", desc: "Redeemable for one massage and one guilt-free moment to simply exist.", clue: "Quest complete. Save file updated: loved, seen, celebrated." }
+const bootScreen = document.getElementById("boot-screen");
+const gameScreen = document.getElementById("game-screen");
+const terminal = document.getElementById("terminal-output");
+const progressBar = document.getElementById("progress-bar");
+
+const screenTitle = document.getElementById("screen-title");
+const screenContent = document.getElementById("screen-content");
+
+const hpBar = document.getElementById("hp-bar");
+const xpBar = document.getElementById("xp-bar");
+
+const inventoryBtn = document.getElementById("inventory-btn");
+const questLogBtn = document.getElementById("quest-log-btn");
+const inventoryPanel = document.getElementById("inventory-panel");
+const questLogPanel = document.getElementById("quest-log-panel");
+const inventoryList = document.getElementById("inventory-list");
+const inventoryCount = document.getElementById("inventory-count");
+const questLogList = document.getElementById("quest-log-list");
+
+let inventory = [];
+let questLog = [];
+let xp = 0;
+let hp = 70;
+
+const bootMessages = [
+  "Loading Adventure Log...",
+  "Loading Inventory...",
+  "Checking HP...",
+  "Calibrating Sub-Bass...",
+  "Searching for Active Player...",
+  "PLAYER FOUND",
+  "KamiSama",
+  "LEVEL 33"
 ];
 
-let unlocked = Number(localStorage.getItem("kamisamaProgress") || "0");
+bootSequence();
 
-const startScreen = document.getElementById("startScreen");
-const questScreen = document.getElementById("questScreen");
-const beginBtn = document.getElementById("beginBtn");
-const unlockBtn = document.getElementById("unlockBtn");
-const resetBtn = document.getElementById("resetBtn");
-const codeInput = document.getElementById("codeInput");
-const errorText = document.getElementById("errorText");
+function bootSequence() {
+  let i = 0;
 
-function updateUI() {
-  const q = quests[Math.max(0, unlocked - 1)];
-  document.getElementById("questBar").style.width = `${(unlocked / quests.length) * 100}%`;
-  document.getElementById("progressText").textContent = `${unlocked}/${quests.length}`;
-  const hp = Math.min(99, 68 + unlocked * 5);
-  document.getElementById("hpBar").style.width = `${hp}%`;
-  document.getElementById("hpText").textContent = `${hp}/99`;
+  const timer = setInterval(() => {
+    if (i >= bootMessages.length) {
+      clearInterval(timer);
+      setTimeout(showGame, 900);
+      return;
+    }
 
-  const rewardBox = document.getElementById("rewardBox");
-  const nextClueBox = document.getElementById("nextClueBox");
+    const line = document.createElement("div");
+    line.className = "terminal-line";
+    line.textContent = bootMessages[i];
+    terminal.appendChild(line);
 
-  if (unlocked === 0) {
-    document.getElementById("questTitle").textContent = "Side Quest Accepted";
-    document.getElementById("questMessage").textContent = "Enter the first access code to begin Level 33.";
-    rewardBox.classList.add("hidden");
-    nextClueBox.classList.add("hidden");
+    progressBar.style.width = `${((i + 1) / bootMessages.length) * 100}%`;
+    i++;
+  }, 600);
+}
+
+function showGame() {
+  bootScreen.classList.add("hidden");
+  gameScreen.classList.remove("hidden");
+
+  hpBar.style.width = `${hp}%`;
+  xpBar.style.width = `${xp}%`;
+
+  showQuestGiver();
+  updateInventory();
+  updateQuestLog();
+}
+
+function setScreen(title, content) {
+  screenTitle.textContent = title;
+  screenContent.innerHTML = content;
+}
+
+function showQuestGiver() {
+  setScreen("SIDE QUEST ACCEPTED", `
+    <p class="quest-text">Every great adventure begins with someone willing to believe in impossible things.</p>
+    <p class="quest-text">Your Quest Giver is nearby.</p>
+    <p class="quest-text">Find the one who always says...</p>
+    <h2>"One more side quest."</h2>
+    <button onclick="showLantern()">PRESS START</button>
+  `);
+
+  questLog = ["Side Quest Accepted"];
+  updateQuestLog();
+}
+
+function showLantern() {
+  setScreen("QUEST ITEM ACQUIRED", `
+    <h2>Explorer's Lantern</h2>
+    <p class="quest-text">The Quest Giver has entrusted you with your first artifact.</p>
+    <div class="code-box">
+      FIRST ACCESS CODE
+      <span>CREATOR</span>
+    </div>
+    <button onclick="showPassword()">CONTINUE</button>
+  `);
+}
+
+function showPassword() {
+  setScreen("ACCESS TERMINAL", `
+    <input id="password" autocomplete="off" spellcheck="false" placeholder="ENTER ACCESS CODE">
+    <button onclick="verifyPassword()">VERIFY</button>
+    <div id="error-message"></div>
+  `);
+
+  setTimeout(() => {
+    const input = document.getElementById("password");
+    input.focus();
+
+    input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") verifyPassword();
+    });
+  }, 100);
+}
+
+function verifyPassword() {
+  const input = document.getElementById("password");
+  const error = document.getElementById("error-message");
+  const code = input.value.trim().toUpperCase();
+
+  if (code === "CREATOR") {
+    setScreen("ACCESS VERIFIED", `
+      <p class="quest-text">Decrypting Quest Data...</p>
+      <div class="progress">
+        <div style="width:100%;height:100%;background:linear-gradient(90deg,#9b5cff,#c487ff);"></div>
+      </div>
+    `);
+
+    setTimeout(showCreatorQuest, 1000);
   } else {
-    document.getElementById("questTitle").textContent = `Quest Complete: ${q.title}`;
-    document.getElementById("questMessage").textContent = q.message;
-    document.getElementById("rewardName").textContent = q.reward;
-    document.getElementById("rewardDesc").textContent = q.desc;
-    document.getElementById("nextClue").textContent = q.clue;
-    rewardBox.classList.remove("hidden");
-    nextClueBox.classList.remove("hidden");
-  }
-
-  const inv = document.getElementById("inventoryList");
-  inv.innerHTML = "";
-  quests.slice(0, unlocked).forEach(item => {
-    const li = document.createElement("li");
-    li.textContent = item.reward;
-    inv.appendChild(li);
-  });
-
-  if (unlocked >= quests.length) {
-    document.querySelector(".code-box").classList.add("hidden");
-  } else {
-    document.querySelector(".code-box").classList.remove("hidden");
-    codeInput.placeholder = `CODE FOR QUEST ${unlocked + 1}`;
+    error.textContent = "ACCESS DENIED";
+    input.value = "";
+    input.focus();
   }
 }
 
-beginBtn.addEventListener("click", () => {
-  startScreen.classList.remove("active");
-  questScreen.classList.add("active");
-  updateUI();
-});
+function showCreatorQuest() {
+  setScreen("QUEST_01", `
+    <h1>THE CREATOR</h1>
+    <p class="quest-text">Before there was a Wolf God...</p>
+    <p class="quest-text">there was an idea.</p>
+    <p class="quest-text">Return to where KamiSama comes to life.</p>
+    <button onclick="beginSearch()">BEGIN SEARCH</button>
+  `);
 
-unlockBtn.addEventListener("click", () => {
-  const entered = codeInput.value.trim().toUpperCase().replace(/\s+/g, "");
-  const expected = quests[unlocked]?.code;
-  if (entered === expected) {
-    unlocked += 1;
-    localStorage.setItem("kamisamaProgress", unlocked);
-    codeInput.value = "";
-    errorText.textContent = "";
-    updateUI();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  } else {
-    errorText.textContent = "ACCESS DENIED. Try again, Wolf God.";
+  questLog = ["The Creator - Active"];
+  updateQuestLog();
+}
+
+function beginSearch() {
+  setScreen("MISSION ACTIVE", `
+    <h2>THE CREATOR</h2>
+    <p class="quest-text">Current Objective:</p>
+    <p class="quest-text">Recover the artifact where KamiSama comes to life.</p>
+    <button onclick="completeCreatorQuest()">ARTIFACT RECOVERED</button>
+  `);
+}
+
+function completeCreatorQuest() {
+  setScreen("SCANNING ARTIFACT", `
+    <p class="quest-text">Verifying recovered item...</p>
+    <div class="progress">
+      <div style="width:100%;height:100%;background:linear-gradient(90deg,#9b5cff,#c487ff);"></div>
+    </div>
+  `);
+
+  setTimeout(() => {
+    addItem("KamiSama Patch");
+    xp = 18;
+    hp = 78;
+    hpBar.style.width = `${hp}%`;
+    xpBar.style.width = `${xp}%`;
+
+    questLog = ["The Creator - Complete"];
+    updateQuestLog();
+
+    setScreen("ADVENTURE LOG UPDATED", `
+      <h2>ITEM ACQUIRED</h2>
+      <p class="quest-text">KamiSama Patch has been added to your inventory.</p>
+      <p class="quest-text">To secure the next code, search beside the ghost who never leaves your side.</p>
+    `);
+  }, 1000);
+}
+
+function addItem(item) {
+  if (!inventory.includes(item)) {
+    inventory.push(item);
   }
-});
 
-resetBtn.addEventListener("click", () => {
-  if (confirm("Reset KamiSama OS progress?")) {
-    unlocked = 0;
-    localStorage.setItem("kamisamaProgress", "0");
-    updateUI();
+  updateInventory();
+}
+
+function updateInventory() {
+  inventoryCount.textContent = `${inventory.length} / 6 ITEMS`;
+
+  inventoryList.innerHTML = "";
+
+  if (inventory.length === 0) {
+    const empty = document.createElement("li");
+    empty.textContent = "No items collected yet.";
+    inventoryList.appendChild(empty);
+    return;
   }
+
+  inventory.forEach(item => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    inventoryList.appendChild(li);
+  });
+}
+
+function updateQuestLog() {
+  questLogList.innerHTML = "";
+
+  if (questLog.length === 0) {
+    const empty = document.createElement("li");
+    empty.textContent = "No active quests.";
+    questLogList.appendChild(empty);
+    return;
+  }
+
+  questLog.forEach(q => {
+    const li = document.createElement("li");
+    li.textContent = q;
+    questLogList.appendChild(li);
+  });
+}
+
+inventoryBtn.addEventListener("click", () => {
+  inventoryPanel.classList.toggle("hidden");
+  questLogPanel.classList.add("hidden");
 });
 
-updateUI();
+questLogBtn.addEventListener("click", () => {
+  questLogPanel.classList.toggle("hidden");
+  inventoryPanel.classList.add("hidden");
+});
